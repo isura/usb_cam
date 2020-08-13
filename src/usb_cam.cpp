@@ -48,9 +48,8 @@
 #include <sys/mman.h>
 #include <sys/ioctl.h>
 
-#include <ros/ros.h>
-#include <boost/lexical_cast.hpp>
-#include <sensor_msgs/fill_image.h>
+#include <rclcpp/rclcpp.hpp>
+#include <sensor_msgs/fill_image.hpp>
 
 #include <usb_cam/usb_cam.h>
 
@@ -60,7 +59,7 @@ namespace usb_cam {
 
 static void errno_exit(const char * s)
 {
-  ROS_ERROR("%s error %d, %s", s, errno, strerror(errno));
+  RCLCPP_ERROR(rclcpp::get_logger("usb_cam"), "%s error %d, %s", s, errno, strerror(errno));
   exit(EXIT_FAILURE);
 }
 
@@ -370,7 +369,7 @@ int UsbCam::init_mjpeg_decoder(int image_width, int image_height)
   avcodec_ = avcodec_find_decoder(AV_CODEC_ID_MJPEG);
   if (!avcodec_)
   {
-    ROS_ERROR("Could not find MJPEG decoder");
+    RCLCPP_ERROR(rclcpp::get_logger("usb_cam"), "Could not find MJPEG decoder");
     return 0;
   }
 
@@ -400,7 +399,7 @@ int UsbCam::init_mjpeg_decoder(int image_width, int image_height)
   /* open it */
   if (avcodec_open2(avcodec_context_, avcodec_, &avoptions_) < 0)
   {
-    ROS_ERROR("Could not open MJPEG Decoder");
+    RCLCPP_ERROR(rclcpp::get_logger("usb_cam"), "Could not open MJPEG Decoder");
     return 0;
   }
   return 1;
@@ -423,7 +422,7 @@ void UsbCam::mjpeg2rgb(char *MJPEG, int len, char *RGB, int NumPixels)
 
   if (decoded_len < 0)
   {
-    ROS_ERROR("Error while decoding frame.");
+    RCLCPP_ERROR(rclcpp::get_logger("usb_cam"), "Error while decoding frame.");
     return;
   }
 #else
@@ -432,7 +431,7 @@ void UsbCam::mjpeg2rgb(char *MJPEG, int len, char *RGB, int NumPixels)
 
   if (!got_picture)
   {
-    ROS_ERROR("Webcam: expected picture but didn't get it...");
+    RCLCPP_ERROR(rclcpp::get_logger("usb_cam"), "Webcam: expected picture but didn't get it...");
     return;
   }
 
@@ -441,7 +440,7 @@ void UsbCam::mjpeg2rgb(char *MJPEG, int len, char *RGB, int NumPixels)
   int pic_size = avpicture_get_size(avcodec_context_->pix_fmt, xsize, ysize);
   if (pic_size != avframe_camera_size_)
   {
-    ROS_ERROR("outbuf size mismatch.  pic_size: %d bufsize: %d", pic_size, avframe_camera_size_);
+    RCLCPP_ERROR(rclcpp::get_logger("usb_cam"), "outbuf size mismatch.  pic_size: %d bufsize: %d", pic_size, avframe_camera_size_);
     return;
   }
 
@@ -454,7 +453,7 @@ void UsbCam::mjpeg2rgb(char *MJPEG, int len, char *RGB, int NumPixels)
   int size = avpicture_layout((AVPicture *)avframe_rgb_, AV_PIX_FMT_RGB24, xsize, ysize, (uint8_t *)RGB, avframe_rgb_size_);
   if (size != avframe_rgb_size_)
   {
-    ROS_ERROR("webcam: avpicture_layout error: %d", size);
+    RCLCPP_ERROR(rclcpp::get_logger("usb_cam"), "webcam: avpicture_layout error: %d", size);
     return;
   }
 }
@@ -707,7 +706,7 @@ void UsbCam::init_read(unsigned int buffer_size)
 
   if (!buffers_)
   {
-    ROS_ERROR("Out of memory");
+    RCLCPP_ERROR(rclcpp::get_logger("usb_cam"), "Out of memory");
     exit(EXIT_FAILURE);
   }
 
@@ -716,7 +715,7 @@ void UsbCam::init_read(unsigned int buffer_size)
 
   if (!buffers_[0].start)
   {
-    ROS_ERROR("Out of memory");
+    RCLCPP_ERROR(rclcpp::get_logger("usb_cam"), "Out of memory");
     exit(EXIT_FAILURE);
   }
 }
@@ -735,7 +734,7 @@ void UsbCam::init_mmap(void)
   {
     if (EINVAL == errno)
     {
-      ROS_ERROR_STREAM(camera_dev_ << " does not support memory mapping");
+      RCLCPP_ERROR_STREAM(rclcpp::get_logger("usb_cam"), camera_dev_ << " does not support memory mapping");
       exit(EXIT_FAILURE);
     }
     else
@@ -746,7 +745,7 @@ void UsbCam::init_mmap(void)
 
   if (req.count < 2)
   {
-    ROS_ERROR_STREAM("Insufficient buffer memory on " << camera_dev_);
+    RCLCPP_ERROR_STREAM(rclcpp::get_logger("usb_cam"), "Insufficient buffer memory on " << camera_dev_);
     exit(EXIT_FAILURE);
   }
 
@@ -754,7 +753,7 @@ void UsbCam::init_mmap(void)
 
   if (!buffers_)
   {
-    ROS_ERROR("Out of memory");
+    RCLCPP_ERROR(rclcpp::get_logger("usb_cam"), "Out of memory");
     exit(EXIT_FAILURE);
   }
 
@@ -799,7 +798,7 @@ void UsbCam::init_userp(unsigned int buffer_size)
   {
     if (EINVAL == errno)
     {
-      ROS_ERROR_STREAM(camera_dev_ << " does not support "
+      RCLCPP_ERROR_STREAM(rclcpp::get_logger("usb_cam"), camera_dev_ << " does not support "
                 "user pointer i/o");
       exit(EXIT_FAILURE);
     }
@@ -813,7 +812,7 @@ void UsbCam::init_userp(unsigned int buffer_size)
 
   if (!buffers_)
   {
-    ROS_ERROR("Out of memory");
+    RCLCPP_ERROR(rclcpp::get_logger("usb_cam"), "Out of memory");
     exit(EXIT_FAILURE);
   }
 
@@ -824,7 +823,7 @@ void UsbCam::init_userp(unsigned int buffer_size)
 
     if (!buffers_[n_buffers_].start)
     {
-      ROS_ERROR("Out of memory");
+      RCLCPP_ERROR(rclcpp::get_logger("usb_cam"), "Out of memory");
       exit(EXIT_FAILURE);
     }
   }
@@ -842,7 +841,7 @@ void UsbCam::init_device(int image_width, int image_height, int framerate)
   {
     if (EINVAL == errno)
     {
-      ROS_ERROR_STREAM(camera_dev_ << " is no V4L2 device");
+      RCLCPP_ERROR_STREAM(rclcpp::get_logger("usb_cam"), camera_dev_ << " is no V4L2 device");
       exit(EXIT_FAILURE);
     }
     else
@@ -853,7 +852,7 @@ void UsbCam::init_device(int image_width, int image_height, int framerate)
 
   if (!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE))
   {
-    ROS_ERROR_STREAM(camera_dev_ << " is no video capture device");
+    RCLCPP_ERROR_STREAM(rclcpp::get_logger("usb_cam"), camera_dev_ << " is no video capture device");
     exit(EXIT_FAILURE);
   }
 
@@ -862,7 +861,7 @@ void UsbCam::init_device(int image_width, int image_height, int framerate)
     case IO_METHOD_READ:
       if (!(cap.capabilities & V4L2_CAP_READWRITE))
       {
-        ROS_ERROR_STREAM(camera_dev_ << " does not support read i/o");
+        RCLCPP_ERROR_STREAM(rclcpp::get_logger("usb_cam"), camera_dev_ << " does not support read i/o");
         exit(EXIT_FAILURE);
       }
 
@@ -872,7 +871,7 @@ void UsbCam::init_device(int image_width, int image_height, int framerate)
     case IO_METHOD_USERPTR:
       if (!(cap.capabilities & V4L2_CAP_STREAMING))
       {
-        ROS_ERROR_STREAM(camera_dev_ << " does not support streaming i/o");
+        RCLCPP_ERROR_STREAM(rclcpp::get_logger("usb_cam"), camera_dev_ << " does not support streaming i/o");
         exit(EXIT_FAILURE);
       }
 
@@ -944,14 +943,14 @@ void UsbCam::init_device(int image_width, int image_height, int framerate)
   if (xioctl(fd_, VIDIOC_G_PARM, &stream_params) < 0)
     errno_exit("Couldn't query v4l fps!");
 
-  ROS_DEBUG("Capability flag: 0x%x", stream_params.parm.capture.capability);
+  RCLCPP_DEBUG(rclcpp::get_logger("usb_cam"), "Capability flag: 0x%x", stream_params.parm.capture.capability);
 
   stream_params.parm.capture.timeperframe.numerator = 1;
   stream_params.parm.capture.timeperframe.denominator = framerate;
   if (xioctl(fd_, VIDIOC_S_PARM, &stream_params) < 0)
-    ROS_WARN("Couldn't set camera framerate");
+    RCLCPP_WARN(rclcpp::get_logger("usb_cam"), "Couldn't set camera framerate");
   else
-    ROS_DEBUG("Set framerate to be %i", framerate);
+    RCLCPP_DEBUG(rclcpp::get_logger("usb_cam"), "Set framerate to be %i", framerate);
 
   switch (io_)
   {
@@ -983,13 +982,13 @@ void UsbCam::open_device(void)
 
   if (-1 == stat(camera_dev_.c_str(), &st))
   {
-    ROS_ERROR_STREAM("Cannot identify '" << camera_dev_ << "': " << errno << ", " << strerror(errno));
+    RCLCPP_ERROR_STREAM(rclcpp::get_logger("usb_cam"), "Cannot identify '" << camera_dev_ << "': " << errno << ", " << strerror(errno));
     exit(EXIT_FAILURE);
   }
 
   if (!S_ISCHR(st.st_mode))
   {
-    ROS_ERROR_STREAM(camera_dev_ << " is no device");
+    RCLCPP_ERROR_STREAM(rclcpp::get_logger("usb_cam"), camera_dev_ << " is no device");
     exit(EXIT_FAILURE);
   }
 
@@ -997,7 +996,7 @@ void UsbCam::open_device(void)
 
   if (-1 == fd_)
   {
-    ROS_ERROR_STREAM("Cannot open '" << camera_dev_ << "': " << errno << ", " << strerror(errno));
+    RCLCPP_ERROR_STREAM(rclcpp::get_logger("usb_cam"), "Cannot open '" << camera_dev_ << "': " << errno << ", " << strerror(errno));
     exit(EXIT_FAILURE);
   }
 }
@@ -1036,7 +1035,7 @@ void UsbCam::start(const std::string& dev, io_method io_method,
   }
   else
   {
-    ROS_ERROR("Unknown pixel format.");
+    RCLCPP_ERROR(rclcpp::get_logger("usb_cam"), "Unknown pixel format.");
     exit(EXIT_FAILURE);
   }
 
@@ -1079,21 +1078,21 @@ void UsbCam::shutdown(void)
   image_ = NULL;
 }
 
-void UsbCam::grab_image(sensor_msgs::Image* msg)
+void UsbCam::grab_image(sensor_msgs::msg::Image* msg)
 {
   // grab the image
   grab_image();
   // stamp the image
-  msg->header.stamp = ros::Time::now();
+  msg->header.stamp = clock_.now();
   // fill the info
   if (monochrome_)
   {
-    fillImage(*msg, "mono8", image_->height, image_->width, image_->width,
+    sensor_msgs::fillImage(*msg, "mono8", image_->height, image_->width, image_->width,
         image_->image);
   }
   else
   {
-    fillImage(*msg, "rgb8", image_->height, image_->width, 3 * image_->width,
+    sensor_msgs::fillImage(*msg, "rgb8", image_->height, image_->width, 3 * image_->width,
         image_->image);
   }
 }
@@ -1123,7 +1122,7 @@ void UsbCam::grab_image()
 
   if (0 == r)
   {
-    ROS_ERROR("select timeout");
+    RCLCPP_ERROR(rclcpp::get_logger("usb_cam"), "select timeout");
     exit(EXIT_FAILURE);
   }
 
@@ -1149,13 +1148,13 @@ void UsbCam::set_auto_focus(int value)
     }
     else
     {
-      ROS_INFO("V4L2_CID_FOCUS_AUTO is not supported");
+      RCLCPP_INFO(rclcpp::get_logger("usb_cam"), "V4L2_CID_FOCUS_AUTO is not supported");
       return;
     }
   }
   else if (queryctrl.flags & V4L2_CTRL_FLAG_DISABLED)
   {
-    ROS_INFO("V4L2_CID_FOCUS_AUTO is not supported");
+    RCLCPP_INFO(rclcpp::get_logger("usb_cam"), "V4L2_CID_FOCUS_AUTO is not supported");
     return;
   }
   else
@@ -1180,7 +1179,7 @@ void UsbCam::set_auto_focus(int value)
 */
 void UsbCam::set_v4l_parameter(const std::string& param, int value)
 {
-  set_v4l_parameter(param, boost::lexical_cast<std::string>(value));
+  set_v4l_parameter(param, std::to_string(value));
 }
 /**
 * Set video device parameter via call to v4l-utils.
@@ -1208,10 +1207,10 @@ void UsbCam::set_v4l_parameter(const std::string& param, const std::string& valu
     pclose(stream);
     // any output should be an error
     if (output.length() > 0)
-      ROS_WARN("%s", output.c_str());
+      RCLCPP_WARN(rclcpp::get_logger("usb_cam"), "%s", output.c_str());
   }
   else
-    ROS_WARN("usb_cam_node could not run '%s'", cmd.c_str());
+    RCLCPP_WARN(rclcpp::get_logger("usb_cam"), "usb_cam_node could not run '%s'", cmd.c_str());
 }
 
 UsbCam::io_method UsbCam::io_method_from_string(const std::string& str)
